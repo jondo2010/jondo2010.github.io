@@ -1,0 +1,35 @@
+base_url = "https://jondo2010.github.io"
+
+title = "John's Daydreaming"
+
+# Whether to automatically compile all Sass files in the sass directory
+compile_sass = false
+build_search_index = false
+
+theme = "kodama-theme"
+
+[translations]
+Biography = "Biography"
+Interests = "Interests"
+Education = "Education"
+toc = "Table of Contents"
+Published = "Published"
+Abstract = "Abstract"
+volume = "volume"
+number = "number"
+pages = "pages"
+
+[markdown]
+highlight_code = true
+highlight_theme = "base16-ocean-dark"
+
+[extra]
+avatar = "static/portrait.jpg"
+favicon = "static/portrait.jpg"
+
+email = "jondo2010[at]gmail.com"
+contact_in_index = true
+
+menu_items = [
+  { path = "contacts", name = "Contact" },
+]
