@@ -1,6 +1,4 @@
 +++
-#title = "title"
-date = 2023-04-24
 page_template="page.html"
 
 [extra]
@@ -8,8 +6,10 @@ title = "Just another engineering blog"
 
 interests = [
     "All things Rust 🦀",
-    "Numerical Simulation",
-    "Cyber-Physical systems"
+    "Numerical Simulation 🔢",
+    "Cyber-Physical systems 🤖",
+    "Autonomous vehicles 🚗",
+    "Embedded systems 📟",
 ]
 
 [[extra.education.courses]]
@@ -28,4 +28,4 @@ interests = [
   link = "https://www.linkedin.com/in/hughes-john/"
 +++
 
-I'm a software engineer and Rust 🦀 enthusiast based in Munich.
+A software engineer and Rust 🦀 enthusiast based in Munich.
