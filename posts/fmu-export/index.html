@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <link rel="shortcut icon" href="https:&#x2F;&#x2F;jondo2010.github.io&#x2F;processed_images&#x2F;portrait.23ccbc8eddabffd2.png" type="image/png">
+  <link rel="icon" href="https:&#x2F;&#x2F;jondo2010.github.io&#x2F;processed_images&#x2F;portrait.23ccbc8eddabffd2.png" type="image/png">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <meta charset="utf-8">
+
+  <!-- Custom header for users, includes custom css or js here -->
+  <title> From TODO to Done(ish)</title>
+
+  
+<!-- CSS -->
+<link rel="stylesheet" href="https://jondo2010.github.io/styles/styles.css" />
+
+    </head>
+
+<body class="bg-white">
+  <!-- Top nav bar -->
+  
+<nav id="header" class="w-full z-10 top-0 shadow-md mx-0">
+  <div id="progress" class="top-0"></div>
+  <!-- <div class="w-full max-w-5xl mx-auto flex flex-wrap items-center justify-between mt-0 py-2  sm:bg-green-900 md:bg-red-900 lg:bg-blue-900 bg-yellow-900"> -->
+  <div class="w-full max-w-4xl mx-auto flex sm:flex-nowrap flex-wrap items-center justify-between mt-0 py-2">
+    <div class="pl-4">
+      <a class="text-gray-900 text-base no-underline hover:no-underline font-extrabold" href="https:&#x2F;&#x2F;jondo2010.github.io/">
+        From TODO to Done(ish)
+      </a>
+    </div>
+
+    <div class="w-full flex-grow sm:flex sm:items-center flex-wrap sm:flex-nowrap sm:w-auto mt-2 sm:mt-0 bg-transparent z-20" id="nav-content">
+      <ul class="list-reset flex flex-wrap sm:justify-end flex-1 items-center">
+          <li class="mr-3 text-sm">
+              <a href="https://jondo2010.github.io/posts" class="inline-block py-2 px-4 text-sky-600 font-bold no-underline">
+                List of blog posts
+              </a>
+            </li>
+            <li class="mr-3 text-sm">
+            <a href=https://jondo2010.github.io/contacts class="inline-block text-gray-600 no-underline hover:text-gray-900 hover:text-underline py-2 px-4">
+              Contact
+            </a>
+          </li>
+          </ul>
+    </div>
+  </div>
+</nav>
+
+  <!-- Container -->
+  
+<div class="container max-w-3xl mx-auto">
+  <div class="pt-8 flex">
+    <h1 class="grow font-bold font-sans break-normal text-gray-900 text-3xl">FMU Export in Rust</h1>
+  </div>
+  <div class="mb-8"></div>
+
+  <article class="prose prose-indigo max-w-3xl">
+    
+    <h1 id="generate-fmus-with-rust-fmi">Generate FMUs with rust-fmi</h1>
+<p>Back when I updated the <a href="https://github.com/jondo2010/rust-fmi">rust-fmi</a> library in early 2024 to support FMI 3.0, I did it mostly out of interest in learning the new standard and its features. I hadn't had access to a commercial modeling tool such as Dymola for a while, and since OpenModelica didn't (and still doesn't) support FMI3 export, I was limited at the time to testing the new import code with the Modelica <a href="https://github.com/modelica/Reference-FMUs">reference FMUs</a>.</p>
+<p>Even at the beginning of the project several years earlier, I thought it would be cool to also support the creation of FMUs. I didn't have a clear idea about what that would look like, or what a direct Rust implementation would offer over existing tools, and actually my experience with Rust wasn't as extensive then. Now with the recent addition of the FMI layered standards such as <a href="https://modelica.github.io/fmi-ls-bus/main">fmi-ls-bus</a>, I started imagining how Rust-based FMUs could be used in a heterogeneous HIL/SIL setup, with real controllers and other components implemented in Rust, as well as e.g., gateway FMUs connecting to real CAN or Ethernet networks.</p>
+<p>After a few weeks of evening and weekend work, I'm excited to announce <em>experimental</em> support for <strong>generating and exporting FMUs</strong> (Functional Mockup Units) directly from Rust code using <a href="https://github.com/jondo2010/rust-fmi">rust-fmi</a>. With both <strong>export</strong> and <strong>import</strong> capabilities, this brings the power of Rust to the FMI world, offering a memory-safe alternative to modeling tools and C/C++ implementations.</p>
+<div class="w-full max-w-md px-8 py-4 mt-16 bg-white rounded-lg shadow-lg dark:bg-gray-800">
+    <h2 class="mt-2 text-lg font-semibold text-gray-800 dark:text-white md:mt-0">What is an FMU?</h2>
+
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <ul>
+<li>An FMU (Functional Mockup Unit) is a self-contained, tool-agnostic simulation component (shared library + XML metadata in a zipfile container).</li>
+<li>Defined by the FMI standard, enabling standardized integration of models across tools for system integration, HIL testing, protected model exchange, and digital twin scenarios.</li>
+<li>For Rust developers, FMUs provide a path to plug safe, performant Rust-based controllers and algorithms into established engineering workflows in automotive, aerospace, and industrial automation without necessarily exposing source code.</li>
+</ul>
+
+    </p>
+</div><h2 id="existing-development">Existing development</h2>
+<p>Generating FMUs is typically accomplished with one of two approaches:</p>
+<ol>
+<li><strong>Model-based tools</strong> - While powerful, the best here require expensive commercial licenses</li>
+<li><strong>Manual C/C++ implementation</strong> - This requires writing substantial boilerplate code, manually authoring XML model descriptions, and managing complex build processes</li>
+</ol>
+<h2 id="crab-rust-on-the-scene">🦀 Rust on the scene</h2>
+<p>With <code>rust-fmi</code>'s new export capabilities, you can now define your entire FMU model in a single Rust struct using derive macros. The library automatically generates:</p>
+<ul>
+<li>✅ <strong>Full FMI C API implementation</strong> - All the low-level bindings handled for you</li>
+<li>✅ <strong>Type-safe variable handling</strong> - Rust's type system prevents common errors</li>
+<li>✅ <strong>Complete XML model description</strong> - No manual XML authoring required</li>
+<li>✅ <strong>Memory-safe implementation</strong> - No more worrying about C-style memory management</li>
+<li>✅ <strong>FMU packaging tooling</strong> - Easily bundle your FMU with <code>cargo xtask bundle</code></li>
+</ul>
+<h2 id="a-simple-example">A Simple Example</h2>
+<p>Here's how easy it is to re-create the VanDerPol oscillator FMU in Rust, complete with array state variables:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// Van der Pol oscillator FMU model
+</span><span style="color:#65737e;">///
+</span><span style="color:#65737e;">/// This is implemented as a system of first-order ODEs:
+</span><span style="color:#65737e;">/// - der(x0) = x1  
+</span><span style="color:#65737e;">/// - der(x1) = μ(1 - x0²)x1 - x0
+</span><span>#[</span><span style="color:#bf616a;">derive</span><span>(FmuModel, Default, Debug)]
+</span><span style="color:#b48ead;">struct </span><span>VanDerPol {
+</span><span>    </span><span style="color:#65737e;">/// State variables (x[0], x[1])
+</span><span>    #[</span><span style="color:#bf616a;">variable</span><span>(causality = Output, variability = Continuous, state, start = [2.0, 0.0], initial = Exact)]
+</span><span>    </span><span style="color:#bf616a;">x</span><span>: [</span><span style="color:#b48ead;">f64</span><span>; 2],
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/// Derivatives of state variables (der(x[0]), der(x[1]))
+</span><span>    #[</span><span style="color:#bf616a;">variable</span><span>(causality = Local, variability = Continuous, derivative = x, initial = Calculated)]
+</span><span>    </span><span style="color:#bf616a;">der_x</span><span>: [</span><span style="color:#b48ead;">f64</span><span>; 2],
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/// Scalar parameter μ
+</span><span>    #[</span><span style="color:#bf616a;">variable</span><span>(causality = Parameter, variability = Fixed, start = 1.0, initial = Exact)]
+</span><span>    </span><span style="color:#bf616a;">mu</span><span>: </span><span style="color:#b48ead;">f64</span><span>,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">impl </span><span>UserModel </span><span style="color:#b48ead;">for </span><span>VanDerPol {
+</span><span>    </span><span style="color:#b48ead;">type </span><span>LoggingCategory = DefaultLoggingCategory;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">calculate_values</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">_context</span><span>: &amp;ModelContext&lt;</span><span style="color:#b48ead;">Self</span><span>&gt;) -&gt; Result&lt;Fmi3Res, Fmi3Error&gt; {
+</span><span>        </span><span style="color:#65737e;">// Calculate the derivatives according to Van der Pol equations:
+</span><span>        </span><span style="color:#65737e;">// der(x[0]) = x[1]
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.der_x[</span><span style="color:#d08770;">0</span><span>] = </span><span style="color:#bf616a;">self</span><span>.x[</span><span style="color:#d08770;">1</span><span>];
+</span><span>
+</span><span>        </span><span style="color:#65737e;">// der(x[1]) = mu * ((1 - x[0]²) * x[1]) - x[0]
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.der_x[</span><span style="color:#d08770;">1</span><span>] = </span><span style="color:#bf616a;">self</span><span>.mu * ((</span><span style="color:#d08770;">1.0 </span><span>- </span><span style="color:#bf616a;">self</span><span>.x[</span><span style="color:#d08770;">0</span><span>] * </span><span style="color:#bf616a;">self</span><span>.x[</span><span style="color:#d08770;">0</span><span>]) * </span><span style="color:#bf616a;">self</span><span>.x[</span><span style="color:#d08770;">1</span><span>]) - </span><span style="color:#bf616a;">self</span><span>.x[</span><span style="color:#d08770;">0</span><span>];
+</span><span>
+</span><span>        Ok(Fmi3Res::</span><span style="color:#d08770;">OK</span><span>)
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// Export the complete FMU with C API
+</span><span>fmi_export::export_fmu!(VanDerPol);
+</span></code></pre>
+<p>That's it! This single Rust file defines a complete, functional FMU that can be used in any FMI-compliant simulation environment.</p>
+<p>This code generator creates the following <code>modelDescription.xml</code> for you automatically:</p>
+<pre data-lang="xml" style="background-color:#2b303b;color:#c0c5ce;" class="language-xml "><code class="language-xml" data-lang="xml"><span>&lt;?</span><span style="color:#bf616a;">xml </span><span style="color:#d08770;">version</span><span>=&quot;</span><span style="color:#a3be8c;">1.0</span><span>&quot; </span><span style="color:#d08770;">encoding</span><span>=&quot;</span><span style="color:#a3be8c;">UTF-8</span><span>&quot;?&gt;
+</span><span>&lt;</span><span style="color:#bf616a;">fmiModelDescription </span><span style="color:#d08770;">fmiVersion</span><span>=&quot;</span><span style="color:#a3be8c;">3.0</span><span>&quot; </span><span style="color:#d08770;">modelName</span><span>=&quot;</span><span style="color:#a3be8c;">vanderpol</span><span>&quot; </span><span style="color:#d08770;">instantiationToken</span><span>=&quot;</span><span style="color:#a3be8c;">ec737b5d-a92d-5527-9670-10230e0879f7</span><span>&quot; </span><span style="color:#d08770;">description</span><span>=&quot;</span><span style="color:#a3be8c;">Van der Pol oscillator FMU example ported from Reference FMUs</span><span>&quot; </span><span style="color:#d08770;">version</span><span>=&quot;</span><span style="color:#a3be8c;">0.1.0</span><span>&quot; </span><span style="color:#d08770;">generationTool</span><span>=&quot;</span><span style="color:#a3be8c;">rust-fmi</span><span>&quot; </span><span style="color:#d08770;">generationDateAndTime</span><span>=&quot;</span><span style="color:#a3be8c;">2025-09-10T14:46:05.166472+00:00</span><span>&quot;&gt;
+</span><span>  &lt;</span><span style="color:#bf616a;">ModelExchange </span><span style="color:#d08770;">modelIdentifier</span><span>=&quot;</span><span style="color:#a3be8c;">vanderpol</span><span>&quot; </span><span style="color:#d08770;">canGetAndSetFMUState</span><span>=&quot;</span><span style="color:#a3be8c;">false</span><span>&quot; </span><span style="color:#d08770;">canSerializeFMUState</span><span>=&quot;</span><span style="color:#a3be8c;">false</span><span>&quot;/&gt;
+</span><span>  &lt;</span><span style="color:#bf616a;">DefaultExperiment </span><span style="color:#d08770;">startTime</span><span>=&quot;</span><span style="color:#a3be8c;">0</span><span>&quot; </span><span style="color:#d08770;">stopTime</span><span>=&quot;</span><span style="color:#a3be8c;">20</span><span>&quot; </span><span style="color:#d08770;">stepSize</span><span>=&quot;</span><span style="color:#a3be8c;">0.01</span><span>&quot;/&gt;
+</span><span>  &lt;</span><span style="color:#bf616a;">ModelVariables</span><span>&gt;
+</span><span>    &lt;</span><span style="color:#bf616a;">Float64 </span><span style="color:#d08770;">name</span><span>=&quot;</span><span style="color:#a3be8c;">time</span><span>&quot; </span><span style="color:#d08770;">valueReference</span><span>=&quot;</span><span style="color:#a3be8c;">0</span><span>&quot; </span><span style="color:#d08770;">causality</span><span>=&quot;</span><span style="color:#a3be8c;">independent</span><span>&quot; </span><span style="color:#d08770;">variability</span><span>=&quot;</span><span style="color:#a3be8c;">continuous</span><span>&quot; </span><span style="color:#d08770;">description</span><span>=&quot;</span><span style="color:#a3be8c;">Simulation time</span><span>&quot;/&gt;
+</span><span>    &lt;</span><span style="color:#bf616a;">Float64 </span><span style="color:#d08770;">start</span><span>=&quot;</span><span style="color:#a3be8c;">2 0</span><span>&quot; </span><span style="color:#d08770;">initial</span><span>=&quot;</span><span style="color:#a3be8c;">exact</span><span>&quot; </span><span style="color:#d08770;">name</span><span>=&quot;</span><span style="color:#a3be8c;">x</span><span>&quot; </span><span style="color:#d08770;">valueReference</span><span>=&quot;</span><span style="color:#a3be8c;">1</span><span>&quot; </span><span style="color:#d08770;">causality</span><span>=&quot;</span><span style="color:#a3be8c;">output</span><span>&quot; </span><span style="color:#d08770;">variability</span><span>=&quot;</span><span style="color:#a3be8c;">continuous</span><span>&quot;&gt;
+</span><span>      &lt;</span><span style="color:#bf616a;">Dimension </span><span style="color:#d08770;">start</span><span>=&quot;</span><span style="color:#a3be8c;">2</span><span>&quot;/&gt;
+</span><span>    &lt;/</span><span style="color:#bf616a;">Float64</span><span>&gt;
+</span><span>    &lt;</span><span style="color:#bf616a;">Float64 </span><span style="color:#d08770;">initial</span><span>=&quot;</span><span style="color:#a3be8c;">calculated</span><span>&quot; </span><span style="color:#d08770;">name</span><span>=&quot;</span><span style="color:#a3be8c;">der_x</span><span>&quot; </span><span style="color:#d08770;">valueReference</span><span>=&quot;</span><span style="color:#a3be8c;">2</span><span>&quot; </span><span style="color:#d08770;">variability</span><span>=&quot;</span><span style="color:#a3be8c;">continuous</span><span>&quot;&gt;
+</span><span>      &lt;</span><span style="color:#bf616a;">Dimension </span><span style="color:#d08770;">start</span><span>=&quot;</span><span style="color:#a3be8c;">2</span><span>&quot;/&gt;
+</span><span>    &lt;/</span><span style="color:#bf616a;">Float64</span><span>&gt;
+</span><span>    &lt;</span><span style="color:#bf616a;">Float64 </span><span style="color:#d08770;">start</span><span>=&quot;</span><span style="color:#a3be8c;">1</span><span>&quot; </span><span style="color:#d08770;">initial</span><span>=&quot;</span><span style="color:#a3be8c;">exact</span><span>&quot; </span><span style="color:#d08770;">name</span><span>=&quot;</span><span style="color:#a3be8c;">mu</span><span>&quot; </span><span style="color:#d08770;">valueReference</span><span>=&quot;</span><span style="color:#a3be8c;">3</span><span>&quot; </span><span style="color:#d08770;">causality</span><span>=&quot;</span><span style="color:#a3be8c;">parameter</span><span>&quot; </span><span style="color:#d08770;">variability</span><span>=&quot;</span><span style="color:#a3be8c;">fixed</span><span>&quot;/&gt;
+</span><span>  &lt;/</span><span style="color:#bf616a;">ModelVariables</span><span>&gt;
+</span><span>  &lt;</span><span style="color:#bf616a;">ModelStructure</span><span>&gt;
+</span><span>    &lt;</span><span style="color:#bf616a;">Output </span><span style="color:#d08770;">valueReference</span><span>=&quot;</span><span style="color:#a3be8c;">1</span><span>&quot;/&gt;
+</span><span>    &lt;</span><span style="color:#bf616a;">ContinuousStateDerivative </span><span style="color:#d08770;">valueReference</span><span>=&quot;</span><span style="color:#a3be8c;">2</span><span>&quot;/&gt;
+</span><span>    &lt;</span><span style="color:#bf616a;">InitialUnknown </span><span style="color:#d08770;">valueReference</span><span>=&quot;</span><span style="color:#a3be8c;">2</span><span>&quot;/&gt;
+</span><span>  &lt;/</span><span style="color:#bf616a;">ModelStructure</span><span>&gt;
+</span><span>&lt;/</span><span style="color:#bf616a;">fmiModelDescription</span><span>&gt;
+</span></code></pre>
+<h2 id="key-benefits">Key Benefits</h2>
+<ul>
+<li><strong>Single Source of Truth:</strong> Define your model, variables, and metadata in one Rust struct using attributes.</li>
+<li><strong>Type Safety:</strong> Rust checks array bounds and derivative links at compile time, reducing runtime errors.</li>
+<li><strong>Efficient Code:</strong> The derive macro generates code with no extra runtime cost.</li>
+<li><strong>Simplified Workflow:</strong> No manual XML or syncing between code and metadata—array variables are handled for you.</li>
+<li><strong>Modern Tooling:</strong> Use Cargo, Rust’s testing tools, and IDE support out of the box.</li>
+</ul>
+<h2 id="architecture-highlights">Architecture Highlights</h2>
+<p>The implementation leverages several key components:</p>
+<ul>
+<li><code>#[derive(FmuModel)]</code> macro: Automatically analyzes your struct and generates all required FMI infrastructure</li>
+<li>Variable attributes: Declarative syntax for specifying FMI variable properties</li>
+<li>Array support: Native handling of Rust arrays with automatic FMI variable generation</li>
+<li>Derivative linking: Automatic setup of state-derivative relationships</li>
+<li><code>UserModel</code> trait: Clean separation between generated code and your custom model logic</li>
+<li>Support for all FMI 3.0 variable types and causality/variability options</li>
+<li>Event handling and state management hooks (demonstrated in <code>BouncingBall</code> and <code>Stair</code> examples)</li>
+</ul>
+<h2 id="current-limitations">Current Limitations</h2>
+<p>This feature is experimental with some important caveats:</p>
+<ul>
+<li>FMI 3.0 only: FMI 2.0 support could also be added in the future</li>
+<li><strong>Model-Exchange</strong> only: <strong>Co-Simulation</strong> and <strong>Scheduled-Execution</strong> support coming later</li>
+<li>Only fixed-size arrays (also multi-dimensional) are supported currently. Support for <code>Vec&lt;T&gt;</code> and tensor types such as <code>ndarray::Array</code> could definitely be supported in the future.</li>
+<li>Limited validation: While basic checks are in place, more comprehensive validation of model structure and variable properties is needed.</li>
+<li>Lots of not-yet-implemented FMI features: e.g., directional derivatives, configuration mode, custom logging categories, etc.</li>
+</ul>
+<h2 id="kicking-the-tires">Kicking the Tires</h2>
+<p>Check out the examples of ports of reference FMUs like the <code>VanDerPol</code>, <code>Dahlquist</code>, <code>BouncingBall</code> and <code>Stair</code>. You can build them with Cargo:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">cargo</span><span> xtask bundle</span><span style="color:#bf616a;"> --package</span><span> bouncing_ball
+</span></code></pre>
+<p>And test using either your favorite FMI importer or the included <code>fmi-sim</code> tool:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">cargo</span><span> run</span><span style="color:#bf616a;"> --package</span><span> fmi-sim -- --model target/fmu/bouncing_ball.fmu model-exchange
+</span></code></pre>
+<h2 id="the-future">The Future</h2>
+<p>Depending on feedback, interest, and my own time, I'd like to add support for:</p>
+<ul>
+<li>fmi-ls-bus and other layered standards</li>
+<li>Co-Simulation and Scheduled-Execution interfaces</li>
+<li>Dynamically-sized arrays and tensors</li>
+<li>Advanced features like directional derivatives</li>
+<li>FMI 2.0 compatibility</li>
+</ul>
+<h2 id="community">Community</h2>
+<p>The <code>rust-fmi</code> project is open source and actively seeking contributors. Whether you're a simulation expert, Rust developer, or FMI user, I'd love your feedback and contributions.</p>
+<ul>
+<li><strong>GitHub</strong>: <a href="https://github.com/jondo2010/rust-fmi">jondo2010/rust-fmi</a></li>
+<li><strong>Documentation</strong>: <a href="https://docs.rs/fmi-export">docs.rs/fmi-export</a></li>
+<li><strong>Issues</strong>: Report bugs and request features on GitHub</li>
+</ul>
+<hr />
+<p><em>The rust-fmi project is bringing Rust to the Modelica and FMI community. Try it out and let me know what you think!</em></p>
+
+    </article>
+</div>
+<!-- <div class="sticky bottom-0 px-3">
+    <a href="#page-top">Back to top of page</a>
+  </div> -->
+  <footer class="bg-white">
+    <div class="bg-white text-gray-400 container max-w-4xl mx-auto my-8 px-4">
+    © From TODO to Done(ish). Template <a class="underline" target="_blank" href="https://github.com/adfaure/kodama-theme">Kodama</a> made with <a class="underline" target="_blank" href="https://getzola.org">zola</a>, inspired by <a class="underline" target="_blank" href="https://wowchemy.com/"> wowchemy</a> academic theme.
+    </div>
+  </footer>
+  </body>
+
+</html>
