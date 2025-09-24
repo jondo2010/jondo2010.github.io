@@ -1,6 +1,6 @@
 base_url = "https://jondo2010.github.io"
 
-title = "John's Daydreaming"
+title = "From TODO to Done(ish)"
 
 # Whether to automatically compile all Sass files in the sass directory
 compile_sass = false
