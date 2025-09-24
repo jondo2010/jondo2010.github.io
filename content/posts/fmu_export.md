@@ -12,7 +12,9 @@ Even at the beginning of the project several years earlier, I thought it would b
 After a few weeks of evening and weekend work, I'm excited to announce _experimental_ support for **generating and exporting FMUs** (Functional Mockup Units) directly from Rust code using [rust-fmi](https://github.com/jondo2010/rust-fmi). With both **export** and **import** capabilities, this brings the power of Rust to the FMI world, offering a memory-safe alternative to modeling tools and C/C++ implementations.
 
 {% dialog(title="What is an FMU?") %}
-An FMU (Functional Mockup Unit) is a self-contained, cross-platform, tool-agnostic simulation component (shared library plus XML metadata) defined by the FMI standard, enabling standardized integration of models across tools for system integration, hardware‑in‑the‑loop testing, protected model exchange, co-simulation, and digital twin scenarios; for Rust developers it provides a path to plug safe, performant Rust-based controllers and algorithms into established engineering workflows in automotive, aerospace, and industrial automation without exposing source code.
+- An FMU (Functional Mockup Unit) is a self-contained, tool-agnostic simulation component (shared library + XML metadata in a zipfile container).
+- Defined by the FMI standard, enabling standardized integration of models across tools for system integration, HIL testing, protected model exchange, and digital twin scenarios.
+- For Rust developers, FMUs provide a path to plug safe, performant Rust-based controllers and algorithms into established engineering workflows in automotive, aerospace, and industrial automation without necessarily exposing source code.
 {% end %}
 
 ## Existing development
